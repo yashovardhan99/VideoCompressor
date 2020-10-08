@@ -11,7 +11,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.arthenica.mobileffmpeg.Config
 import com.arthenica.mobileffmpeg.FFmpeg
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import java.util.*
@@ -52,24 +54,27 @@ class VideoSelectedViewModel(application: Application) : AndroidViewModel(applic
         val outputPath = context.getExternalFilesDir("CompressedVideos")
         val outputFile = File.createTempFile("compressed_${Date().time}", ".mp4", outputPath)
         viewModelScope.launch {
-            val rc = FFmpeg.execute("-y -i ${file?.path}  -b:v $rate ${outputFile.path}")
+            val rc =
+                withContext(Dispatchers.IO) { FFmpeg.execute("-y -i ${file?.path}  -b:v $rate ${outputFile.path}") }
             when (rc) {
                 Config.RETURN_CODE_SUCCESS -> {
                     Timber.d("Compression successful!")
                     file?.delete()
+                    _compressing.value = false
                     _done.value = outputFile.toUri()
                 }
                 Config.RETURN_CODE_CANCEL -> {
                     Timber.d("Compression cancelled")
                     _error.value = "Compression was cancelled!"
+                    _compressing.value = false
                 }
                 else -> {
                     Timber.d("Failed with rc=$rc")
                     _error.value = "Compression Failed"
                     Config.printLastCommandOutput(Log.DEBUG)
+                    _compressing.value = false
                 }
             }
-            _compressing.value = false
         }
     }
 

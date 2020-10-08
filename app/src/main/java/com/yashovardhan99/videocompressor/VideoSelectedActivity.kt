@@ -27,11 +27,19 @@ class VideoSelectedActivity : AppCompatActivity() {
         viewModel.error.observe(this) {
             binding.bitrate.error = it
         }
+        viewModel.compressing.observe(this) {
+            Timber.d("Compress progress: $it")
+            if (it) binding.progressCircular.show()
+            else binding.progressCircular.hide()
+        }
         viewModel.done.observe(this) {
             Timber.d("Compressed Video: $it")
-            if (it != null) startActivity(Intent(this, CompressedActivity::class.java).apply {
-                data = viewModel.uri.value
-            })
+            if (it != null) {
+                startActivity(Intent(this, CompressedActivity::class.java).apply {
+                    data = viewModel.uri.value
+                })
+                finish()
+            }
         }
     }
 }

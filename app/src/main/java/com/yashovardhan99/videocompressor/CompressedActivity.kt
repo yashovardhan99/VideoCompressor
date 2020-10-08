@@ -22,7 +22,7 @@ class CompressedActivity : AppCompatActivity() {
             binding.videoView.start()
         }
         viewModel.isPlaying.observe(this) {
-            if (it) binding.videoView.resume()
+            if (it) binding.videoView.start()
             else binding.videoView.pause()
         }
     }
