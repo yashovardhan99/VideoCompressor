@@ -28,12 +28,10 @@ class VideoSelectedViewModel(application: Application) : AndroidViewModel(applic
     private val context = application.applicationContext
     val uri: LiveData<Uri> = _uri
     val bitRate = MutableLiveData<String>()
-    private val _error = MutableLiveData("")
     private val _compressing = MutableLiveData(false)
-    val error: LiveData<String> = _error
     val compressing: LiveData<Boolean> = _compressing
-    private val _done = MutableLiveData<Uri>()
-    val done: LiveData<Uri> = _done
+
+
     private var file: File? = null
 
     fun setVideo(uri: Uri) {
@@ -45,21 +43,21 @@ class VideoSelectedViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun compress() {
-        _error.value = ""
+
         val rate = bitRate.value?.trim()
         Timber.d("compress for $rate")
         if (rate.isNullOrEmpty()) {
-            _error.value = "Please enter a bitrate"//todo remove
             _compressingResult.value=Resource.Error("Please enter a bitrate")
+            _compressing.value=false
             return
         }
         if (!rate.isDigitsOnly()) {
-            _error.value = "Invalid bitrate"//todo remove
             _compressingResult.value=Resource.Error("Invalid bitrate")
+            _compressing.value=false
             return
         }
-        _compressing.value = true//todo:remove
         _compressingResult.value=Resource.Loading()
+        _compressing.value=true
         val outputPath = context.getExternalFilesDir("CompressedVideos")
         val outputFile = File.createTempFile("compressed_${Date().time}", ".mp4", outputPath)
         viewModelScope.launch {
@@ -69,22 +67,19 @@ class VideoSelectedViewModel(application: Application) : AndroidViewModel(applic
                 Config.RETURN_CODE_SUCCESS -> {
                     Timber.d("Compression successful!")
                     file?.delete()
-                    _compressing.value = false//todo:remove
                     _compressingResult.value=Resource.Success(outputFile.toUri())
-                    _done.value = outputFile.toUri()//todo:remove
+                    _compressing.value=false
                 }
                 Config.RETURN_CODE_CANCEL -> {
                     Timber.d("Compression cancelled")
-                    _error.value = "Compression was cancelled!"//todo:remove
                     _compressingResult.value=Resource.Error("Compression was cancelled")
-                    _compressing.value = false//todo:remove
+                    _compressing.value = false
                 }
                 else -> {
                     Timber.d("Failed with rc=$rc")
-                    _error.value = "Compression Failed"//todo:remove
                     _compressingResult.value=Resource.Error("Compression Failed")
+                    _compressing.value=false
                     Config.printLastCommandOutput(Log.DEBUG)
-                    _compressing.value = false//todo:remoce
                 }
             }
         }
