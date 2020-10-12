@@ -24,21 +24,28 @@ class VideoSelectedActivity : AppCompatActivity() {
             binding.videoView.setVideoURI(uri)
             binding.videoView.start()
         }
-        viewModel.error.observe(this) {
-            binding.bitrate.error = it
-        }
-        viewModel.compressing.observe(this) {
-            Timber.d("Compress progress: $it")
-            if (it) binding.progressCircular.show()
-            else binding.progressCircular.hide()
-        }
-        viewModel.done.observe(this) {
-            Timber.d("Compressed Video: $it")
-            if (it != null) {
-                startActivity(Intent(this, CompressedActivity::class.java).apply {
-                    data = viewModel.uri.value
-                })
-                finish()
+
+        viewModel.compressingResult.observe(this){
+            when(it){
+                is Resource.Success->{
+                    binding.progressCircular.hide()
+                    Timber.d("Compressed Video: ${it.data}")
+                    if(it.data!=null){
+                        startActivity(Intent(this,CompressedActivity::class.java).apply {
+                            data=it.data
+                        })
+                        finish()
+                    }
+                }
+                is Resource.Error->{
+                    binding.progressCircular.hide()
+                    binding.bitrate.error=it.message
+                }
+                is Resource.Loading->{
+                    Timber.d("Compress progress: Loading")
+                    binding.progressCircular.show()
+
+                }
             }
         }
     }
