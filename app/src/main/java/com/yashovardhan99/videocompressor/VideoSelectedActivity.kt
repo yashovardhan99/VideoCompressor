@@ -41,5 +41,27 @@ class VideoSelectedActivity : AppCompatActivity() {
                 finish()
             }
         }
+
+        viewModel.compressingResult.observe(this){
+            when(it){
+                is Resource.Success->{
+                    Timber.d("Compressed Video: ${it.data}")
+                    if(it.data!=null){
+                        startActivity(Intent(this,CompressedActivity::class.java).apply {
+                            data=it.data
+                        })
+                        finish()
+                    }
+                }
+                is Resource.Error->{
+                    binding.bitrate.error=it.message
+                }
+                is Resource.Loading->{
+                    //Timber.d("Compress progress: $it")
+                    binding.progressCircular.show()
+                    //binding.progressCircular.hide()
+                }
+            }
+        }
     }
 }
